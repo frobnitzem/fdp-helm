@@ -1,0 +1,12 @@
+kind: NetworkPolicy
+apiVersion: networking.k8s.io/v1
+metadata:
+  name: web-allow-external
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "pelican-cache.name" . }}
+  ingress:
+    - {}
+  policyTypes:
+    - Ingress

@@ -1,0 +1,31 @@
+{{- if .Values.route.enabled }}
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: {{ include "pelican-cache.fullname" . }}-web-ui
+  labels:
+    {{- include "pelican-cache.labels" . | nindent 4 }}
+spec:
+  {{- if .Values.route.host }}
+  host: {{ .Values.route.host | quote }}
+  {{- end }}
+  to:
+    kind: Service
+    name: {{ include "pelican-cache.fullname" . }}
+  port:
+    targetPort: web-ui
+  tls:
+    termination: {{ .Values.route.termination }}
+    destinationCACertificate: |
+      -----BEGIN CERTIFICATE-----
+      MIIBqjCCAU+gAwIBAgIRAJJ2udchfGHX4mxfqfqPKf4wCgYIKoZIzj0EAwIwKTET
+      MBEGA1UEChMKUGVsaWNhbiBDQTESMBAGA1UEAxMJbG9jYWxob3N0MB4XDTI2MDMy
+      NDE3NTc0MFoXDTM2MDMyNDE3NTc0MFowKTETMBEGA1UEChMKUGVsaWNhbiBDQTES
+      MBAGA1UEAxMJbG9jYWxob3N0MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEM02l
+      a7bZAdQJVRE9ODyBE16ay1K5r2OhDrOSL9UqYgKklFSwe/+iZebQkx+wUjjV8BtR
+      FUt03OKQo2KqNA4kPaNYMFYwDgYDVR0PAQH/BAQDAgKEMA8GA1UdEwEB/wQFMAMB
+      Af8wHQYDVR0OBBYEFGrzZvs/OnGbhnKD0pNjbs1txg6wMBQGA1UdEQQNMAuCCWxv
+      Y2FsaG9zdDAKBggqhkjOPQQDAgNJADBGAiEAyr35cVCOSQOiedGSQwtyS7BPsOkl
+      uWJ4ZhMGE1S0NuMCIQC5YdlUtV5eR+o5e7AydIYKUHrwyuvbA6PTdndVhfHC1g==
+      -----END CERTIFICATE-----
+{{- end }}

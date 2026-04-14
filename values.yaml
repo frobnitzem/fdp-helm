@@ -1,0 +1,54 @@
+replicaCount: 1
+
+image:
+  repository: hub.opensciencegrid.org/pelican_platform/cache
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  ports:
+    xrootd: 8443
+    webui: 8000
+    xrootdNodePort: 31812
+
+# Put your /etc/pelican files here as key: content.
+# Each key becomes a file name in /etc/pelican.
+pelicanConfig:
+  pelican.yaml: |
+    Federation:
+      discoveryUrl: https://osg-htc.org
+    Logging:
+       Level: debug
+    Cache:
+      Port: 8443
+      EnableSiteLocalMode: true # site-local cache doesn't join overall topol.
+      Url: https://apps.marble.ccs.ornl.gov:31812
+      # FIXME: vv  mount a large filesystem here  vv
+      StorageLocation: /var/cache/pelican
+      PermittedNamespaces:
+        - /fdp-d3d
+      Concurrency: 10
+    Server:
+      Hostname: pelican-lrn045.apps.marble.ccs.ornl.gov
+      EnableUI: true
+      TLSCertificateChain: /etc/pelican/certificates/tls.crt
+      TLSKey: /etc/pelican/certificates/tls.key
+
+resources: {}
+# resources:
+#   requests:
+#     cpu: 100m
+#     memory: 128Mi
+#   limits:
+#     cpu: 1
+#     memory: 1Gi
+
+# OpenShift friendly: don't force runAsUser; let SCC decide.
+podSecurityContext: {}
+securityContext: {}
+
+# Optional: create OpenShift Route for 8443 (edge-terminated by default)
+route:
+  enabled: true
+  termination: reencrypt
+  host: pelican-lrn045.apps.marble.ccs.ornl.gov

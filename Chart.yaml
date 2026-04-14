@@ -1,0 +1,6 @@
+apiVersion: v2
+name: pelican-cache
+description: Deploy pelican cache container
+type: application
+version: 0.1.0
+appVersion: "latest"
