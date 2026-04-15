@@ -19,6 +19,8 @@ pelicanConfig:
       discoveryUrl: https://osg-htc.org
     Logging:
        Level: debug
+    Xrootd: # deprecated, but I'm seeing error: cannot parse 'xrootd.port' as int: strconv.ParseInt: parsing "tcp://172.123.123.123:8443": invalid syntax
+      Port: 8443
     Cache:
       Port: 8443
       EnableSiteLocalMode: true # site-local cache doesn't join overall topol.

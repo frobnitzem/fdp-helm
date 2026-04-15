@@ -1,7 +1,14 @@
 # Helm Chart for FDP Pelican-Cache
 
-This configures a pelican-cache running on Kubernetes
-that uses the `/fdp-d3d` namespace within <https://osg-htc.org>.
+This Helm Chart is a work in progress to deploy a
+Pelican-cache to OpenShift-managed clusters at sites
+wishing to access Fusion Data Platform (FDP) data.
+Specifically, it uses the `/fdp-d3d` namespace within
+<https://osg-htc.org>.
+
+
+
+# Installation Instructions
 
 This guide gives instructions to install it into an OpenShift
 cluster using [oc](https://github.com/openshift/oc) and [helm](https://helm.sh/docs/intro/install/).
@@ -11,13 +18,19 @@ cluster using [oc](https://github.com/openshift/oc) and [helm](https://helm.sh/d
     oc login
     oc project <projectname>
 
-Then create persistent volume claims (PVC):
-
 ## Step 2 - list available storage classes
+
+You need to know the types of storage classes
+available before you can create a
+persistent volume claim (PVC).
 
     oc get sc
 
-## Step 3 - create the lib volume (and optionally an etc volume)
+Ideally, there's one that's NFS-backed in there.
+If there isn't one, check with your Kubernetes cluster
+admin on allocating disks for this purpose.
+
+## Step 3 - create the pelican-lib volume
 
 ```
 oc apply -f - <<'EOF'
@@ -31,60 +44,14 @@ spec:
     requests:
       storage: 2Gi
   storageClassName: <YOUR_NFS_STORAGECLASS>
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: pelican-config
-spec:
-  accessModes: ["ReadWriteOnce"]
-  resources:
-    requests:
-      storage: 20Mi
-  storageClassName: <YOUR_NFS_STORAGECLASS>
 EOF
 ```
 
-## Step 4 - populate the pelican-config (if using an etc volume)
-
-```
-oc -n <ns> apply -f - <<'EOF'
-apiVersion: v1
-kind: Pod
-metadata:
-  name: pelican-config-loader
-spec:
-  restartPolicy: Never
-  containers:
-  - name: loader
-    image: registry.access.redhat.com/ubi9/ubi
-    command: ["sleep","infinity"]
-    volumeMounts:
-    - name: pelican-config
-      mountPath: /mnt/pelican
-  volumes:
-  - name: pelican-config
-    persistentVolumeClaim:
-      claimName: pelican-config
-EOF
-```
-
-Then wait for it to be running, copy files, and remove it:
-
-    oc -n <ns> wait --for=condition=Ready pod/pelican-config-loader --timeout=120s
-    oc -n <ns> cp ./pelican/config/pelican.yaml pelican-config-loader:/mnt/pelican/pelican.yaml
-    # or the whole dir:
-    oc -n <ns> rsync ./pelican/config/ pelican-config-loader:/mnt/pelican/
-    oc -n <ns> delete pod pelican-config-loader
-
-The trailing / on the source copies the contents into /mnt/pelican/ (not a nested config dir).
-Re-run any time you need to update files.
-
-## Step 5 - deploy the (container, service, route) bundle
+## Step 4 - deploy the (container, service, route) bundle
 
     helm install pelican-cache ./pelican-cache
 
-## Step 6 - fix the internal certificate
+## Step 5 - fix the internal certificate
 
     oc -n <ns> get configmap service-ca-bundle \
       -o jsonpath='{.data.service-ca\.crt}' > service-ca.crt
@@ -134,3 +101,12 @@ after you've deployed the service.
 
     oc -n <namespace> get configmap service-ca-bundle \
       -o jsonpath='{.data.service-ca\.crt}' > service-ca.crt
+
+# References
+
+* [github:bbockelm/pelican-cache](https://github.com/bbockelm/pelican-cache) - Production Pelican Cache Helm Chart Reference
+
+  Uses certmanager and letsencrypt, rather than relying on the Kubernetes route to have its own certificate.
+
+
+
