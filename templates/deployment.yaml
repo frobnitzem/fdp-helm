@@ -21,6 +21,7 @@ spec:
       containers:
         - name: pelican-cache
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          command: ["/entrypoint.sh", pelican-server, cache, serve]
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
             - name: web-ui
@@ -41,10 +42,9 @@ spec:
             {{- toYaml .Values.resources | nindent 12 }}
       volumes:
         - name: pelican-etc
-          persistentVolumeClaim:
-            claimName: pelican-config
-          # alternately, use an empty dir:
-          # emptyDir: {}
+          #persistentVolumeClaim:
+          #  claimName: pelican-config
+          emptyDir: {}
         - name: pelican-lib
           persistentVolumeClaim:
             claimName: pelican-lib
