@@ -4,8 +4,9 @@ metadata:
   name: {{ include "pelican-cache.fullname" . }}-pelican-config
   labels:
     {{- include "pelican-cache.labels" . | nindent 4 }}
-  annotations:
-    service.beta.openshift.io/inject-cabundle: "true"
+# annotations:
+#   service.beta.openshift.io/inject-cabundle: "true"
+#   would create service-ca.crt
 data:
 {{- if .Values.pelicanConfig }}
 {{- range $k, $v := .Values.pelicanConfig }}

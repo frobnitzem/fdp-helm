@@ -21,7 +21,15 @@ spec:
       containers:
         - name: pelican-cache
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
-          command: ["/entrypoint.sh", pelican-server, cache, serve]
+          {{- if .Values.pelicanEnv }}
+          env:
+          {{- range $k, $v := .Values.pelicanEnv }}
+          - name: "{{ $k }}"
+            value: "{{ $v }}"
+          {{- end }}
+          {{- end }}
+          #command: ["/entrypoint.sh", pelican-server, cache, serve]
+          command: ["sleep","infinity"]
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
             - name: web-ui
@@ -54,9 +62,9 @@ spec:
         - name: pelican-config-cm
           configMap:
             name: {{ include "pelican-cache.fullname" . }}-pelican-config
-            items:
-            - key: service-ca.crt
-              path: service-ca.crt
+           #items:
+           #- key: service-ca.crt
+           #  path: service-ca.crt
       initContainers:
       - name: init-copy-config
         image: registry.access.redhat.com/ubi9/ubi
