@@ -33,6 +33,8 @@ pelicanConfig:
       EnableUI: true
       TLSCertificateChain: /etc/pelican/certificates/tls.crt
       TLSKey: /etc/pelican/certificates/tls.key
+    RuntimeDir: /var/lib/pelican
+    ConfigDir: /etc/pelican
 
 pelicanEnv:
   PELICAN_XROOTD_PORT: "8443"
