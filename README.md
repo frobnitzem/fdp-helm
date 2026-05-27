@@ -30,7 +30,7 @@ Ideally, there's one that's NFS-backed in there.
 If there isn't one, check with your Kubernetes cluster
 admin on allocating disks for this purpose.
 
-## Step 3 - create the pelican-lib volume
+## Step 3 - create the pelican-lib and pelican-config volumes
 
 ```
 oc apply -f - <<'EOF'
@@ -44,14 +44,61 @@ spec:
     requests:
       storage: 2Gi
   storageClassName: <YOUR_NFS_STORAGECLASS>
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pelican-config
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 20Mi
+  storageClassName: <YOUR_NFS_STORAGECLASS>
 EOF
 ```
 
-## Step 4 - deploy the (container, service, route) bundle
+## Step 4 - populate the config volume with pelican.yaml
+
+```bash
+oc apply -f - <<'EOF'
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pelican-config-loader
+spec:
+  restartPolicy: Never
+  containers:
+  - name: loader
+    image: registry.access.redhat.com/ubi9/ubi
+    command: ["sleep","infinity"]
+    volumeMounts:
+    - name: pelican-config
+      mountPath: /etc/pelican
+  volumes:
+  - name: pelican-config
+    persistentVolumeClaim:
+      claimName: pelican-config
+EOF
+echo Waiting for pelican-config-loader to become active...
+oc wait --for=condition=Ready pod/pelican-config-loader --timeout=120s
+oc cp pelican/config/pelican.yaml pelican-config-loader:/etc/pelican/
+oc delete pod/pelican-config-loader
+```
+
+Note deleting the pod is necessary before the next step.
+Otherwise, the volume will be claimed by the config-loader,
+and the pelican-cache deployment will not work.
+
+## Step 5 - deploy the (container, service, route) bundle
 
     helm install pelican-cache ./pelican-cache
 
-## Step 5 - fix the internal certificate
+## Step 6 - fix the internal certificate
+
+This step is only needed if you are using reencrypt
+termination and opted for openshift-native certificate
+generation.
 
     oc -n <ns> get configmap service-ca-bundle \
       -o jsonpath='{.data.service-ca\.crt}' > service-ca.crt

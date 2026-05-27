@@ -2,6 +2,8 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ include "pelican-cache.fullname" . }}
+  annotations:
+    {{- toYaml .Values.annotations | nindent 4 }}
   labels:
     {{- include "pelican-cache.labels" . | nindent 4 }}
 spec:
@@ -16,6 +18,7 @@ spec:
         app.kubernetes.io/name: {{ include "pelican-cache.name" . }}
         app.kubernetes.io/instance: {{ .Release.Name }}
     spec:
+      enableServiceLinks: false  # Disables automatic env-var injection
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
@@ -28,8 +31,8 @@ spec:
             value: "{{ $v }}"
           {{- end }}
           {{- end }}
-          #command: ["/entrypoint.sh", pelican-server, cache, serve]
-          command: ["sleep","infinity"]
+          command: ["/entrypoint.sh", pelican-server, cache, serve]
+          #command: ["sleep","infinity"]
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
             - name: web-ui
@@ -41,43 +44,14 @@ spec:
               mountPath: /etc/pelican
             - name: pelican-lib
               mountPath: /var/lib/pelican
-            - name: pelican-certs
-              mountPath: /etc/pelican/certificates
-              readOnly: true
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
       volumes:
         - name: pelican-etc
-          #persistentVolumeClaim:
-          #  claimName: pelican-config
-          emptyDir: {}
+          persistentVolumeClaim:
+            claimName: pelican-config
         - name: pelican-lib
           persistentVolumeClaim:
             claimName: pelican-lib
-        - name: pelican-certs
-          secret:
-            secretName: pelican-cache-tls
-        - name: pelican-config-cm
-          configMap:
-            name: {{ include "pelican-cache.fullname" . }}-pelican-config
-           #items:
-           #- key: service-ca.crt
-           #  path: service-ca.crt
-      initContainers:
-      - name: init-copy-config
-        image: registry.access.redhat.com/ubi9/ubi
-        command: ["/bin/sh","-c"]
-        args:
-        - "cp -R /config/. /etc/pelican/"
-        # - |
-        #   set -euo pipefail
-        #   mkdir -p /etc/pelican
-        #   cp -a /config/. /etc/pelican/
-        volumeMounts:
-        - name: pelican-config-cm
-          mountPath: /config
-          readOnly: true
-        - name: pelican-etc
-          mountPath: /etc/pelican
